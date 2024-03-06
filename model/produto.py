@@ -11,6 +11,7 @@ produto = Table("produto", meta_data,
     Column("descricao", String(255)),
     Column("data_cadastro", Date),
     Column("ativo", Boolean),
+    Column("categoria", NVARCHAR(255)),
     Column("miniatura", NVARCHAR(255)),
 )
 

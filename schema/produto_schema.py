@@ -13,4 +13,5 @@ class produto_schema(BaseModel):
   data_cadastro: str
   ativo: bool
   imagens: List[str]
+  categoria: str
   miniatura: str

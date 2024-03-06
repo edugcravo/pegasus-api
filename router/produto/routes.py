@@ -25,7 +25,6 @@ async def cadastrar_produto(produtoSchema: produto_schema):
             cor = dados_produto.pop('cor')
             armazenamento = dados_produto.pop('armazenamento')
             imagens_dados = dados_produto.pop('imagens')
-            miniatura = dados_produto.pop('miniatura')
 
             # Insere o produto na tabela de produtos
             result = conn.execute(produto.insert().values(dados_produto))
@@ -109,3 +108,49 @@ async def listar_produtos():
 
 
 
+# listar produtos por id
+@produto_router.get("/lista-id/{id}")
+async def listar_produto_id(id: int):
+    with engine.connect() as conn:
+        try:
+            resultado = conn.execute(produto.select().where(produto.c.id == id)).fetchone()
+            if resultado:
+                imagens_produto = conn.execute(produto_imagens.select().where(produto_imagens.c.produto_id == resultado.id)).fetchall()
+                imagens_produtos = []
+                for img in imagens_produto:
+                    img_data = conn.execute(imagens.select().where(imagens.c.id == img.imagens_id)).fetchone()
+                    imagens_produtos.append(img_data.imagem)
+                    if len(imagens_produtos) >= 4:
+                        break
+
+                cores_produto = conn.execute(produto_cores.select().where(produto_cores.c.produto_id == resultado.id)).fetchall()
+                cores_produtos = []
+                for cor in cores_produto:
+                    cor_data = conn.execute(cores.select().where(cores.c.id == cor.cores_id)).fetchone()
+                    cores_produtos.append({'nome': cor_data.nome, 'hexadecimal': cor_data.hexadecimal})
+
+                armazenamento_produto = conn.execute(produto_armazenamento.select().where(produto_armazenamento.c.produto_id == resultado.id)).fetchall()
+                armazenamento_produtos = []
+                for arm in armazenamento_produto:
+                    arm_data = conn.execute(armazenamento.select().where(armazenamento.c.id == arm.armazenamento_id)).fetchone()
+                    armazenamento_produtos.append(arm_data.quantidade)
+
+                produto_info = {
+                    'id': resultado.id,
+                    'nome': resultado.nome,
+                    'desconto': resultado.desconto,
+                    'preco': resultado.preco,
+                    'descricao': resultado.descricao,
+                    'data_cadastro': resultado.data_cadastro,
+                    'ativo': resultado.ativo,
+                    'miniatura': resultado.miniatura,
+                    'imagens': imagens_produtos,
+                    'cores': cores_produtos,
+                    'armazenamento': armazenamento_produtos
+                }
+                return {'status': 200, 'produto': produto_info}
+            else:
+                return {'status': 404, 'message': 'Produto não encontrado'}
+        except Exception as e:
+            print(f"Erro ao listar produto: {e}")
+            return {'status': 500, 'message': 'Erro ao listar produto'}
