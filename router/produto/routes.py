@@ -78,7 +78,7 @@ async def listar_produtos():
                 cores_produtos = []
                 for cor in cores_produto:
                     cor_data = conn.execute(cores.select().where(cores.c.id == cor.cores_id)).fetchone()
-                    cores_produtos.append(cor_data.nome)
+                    cores_produtos.append({'nome': cor_data.nome, 'hexadecimal': cor_data.hexadecimal})
 
                 # Buscar o armazenamento associado ao produto
                 armazenamento_produto = conn.execute(produto_armazenamento.select().where(produto_armazenamento.c.produto_id == item.id)).fetchall()
@@ -98,7 +98,8 @@ async def listar_produtos():
                     'miniatura': item.miniatura,
                     'imagens': imagens_produtos,
                     'cores': cores_produtos,
-                    'armazenamento': armazenamento_produtos
+                    'armazenamento': armazenamento_produtos,
+                    'categoria': item.categoria
                 })
 
             return {'status': 200, 'produtos': produtos}
@@ -213,11 +214,14 @@ async def listar_categorias():
     with engine.connect() as conn:
         try:
             result = conn.execute(produto.select()).fetchall()
-            categorias = []
+            categorias = {}
 
             for item in result:
+                # Adiciona a categoria ao dicionário se ainda não existir
                 if item.categoria not in categorias:
-                    categorias.append(item.categoria)
+                    categorias[item.categoria] = []
+                # Adiciona o nome do produto à lista de produtos da categoria
+                categorias[item.categoria].append({'id': item.id, 'nome':item.nome})
 
             return {'status': 200, 'categorias': categorias}
         except Exception as e:
