@@ -13,6 +13,7 @@ produto = Table("produto", meta_data,
     Column("ativo", Boolean),
     Column("categoria", NVARCHAR(255)),
     Column("miniatura", NVARCHAR(255)),
+    Column("estado", String(255)),
 )
 
 meta_data.create_all(engine)

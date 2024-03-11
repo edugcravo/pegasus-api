@@ -15,3 +15,4 @@ class produto_schema(BaseModel):
   imagens: List[str]
   categoria: str
   miniatura: str
+  estado: str

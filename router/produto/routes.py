@@ -159,8 +159,8 @@ async def listar_produto_id(id: int):
 
 
 # listar produtos por categoria
-@produto_router.get("/lista-categoria/{categoria}")
-async def listar_produto_categoria(categoria: str):
+@produto_router.get("/lista-categoria/{categoria}/{estado}")
+async def listar_produto_categoria(categoria: str, estado: str):
     with engine.connect() as conn:
         try:
             result = conn.execute(produto.select().where(produto.c.categoria == categoria)).fetchall()
@@ -199,7 +199,8 @@ async def listar_produto_categoria(categoria: str):
                     'imagens': imagens_produtos,
                     'cores': cores_produtos,
                     'armazenamento': armazenamento_produtos,
-                    'categoria': item.categoria
+                    'categoria': item.categoria,
+                    'estado': item.estado
                 })
 
             return {'status': 200, 'produtos': produtos}
@@ -207,6 +208,55 @@ async def listar_produto_categoria(categoria: str):
             print(f"Erro ao listar produtos: {e}")
             return {'status': 500, 'message': 'Erro ao listar produtos'}
         
+# lista os produtos por categoria e estado
+@produto_router.get("/lista-categoria-estado/{categoria}/{estado}")
+async def listar_produto_categoria_estado(categoria: str, estado: str):
+    with engine.connect() as conn:
+        try:
+            result = conn.execute(produto.select().where(produto.c.categoria == categoria, produto.c.estado == estado)).fetchall()
+            produtos = []
+
+            for item in result:
+                imagens_produto = conn.execute(produto_imagens.select().where(produto_imagens.c.produto_id == item.id)).fetchall()
+                imagens_produtos = []
+                for img in imagens_produto:
+                    img_data = conn.execute(imagens.select().where(imagens.c.id == img.imagens_id)).fetchone()
+                    imagens_produtos.append(img_data.imagem)
+                    if len(imagens_produtos) >= 4:
+                        break
+
+                cores_produto = conn.execute(produto_cores.select().where(produto_cores.c.produto_id == item.id)).fetchall()
+                cores_produtos = []
+                for cor in cores_produto:
+                    cor_data = conn.execute(cores.select().where(cores.c.id == cor.cores_id)).fetchone()
+                    cores_produtos.append({'nome': cor_data.nome, 'hexadecimal': cor_data.hexadecimal})
+
+                armazenamento_produto = conn.execute(produto_armazenamento.select().where(produto_armazenamento.c.produto_id == item.id)).fetchall()
+                armazenamento_produtos = []
+                for arm in armazenamento_produto:
+                    arm_data = conn.execute(armazenamento.select().where(armazenamento.c.id == arm.armazenamento_id)).fetchone()
+                    armazenamento_produtos.append(arm_data.quantidade)
+
+                produtos.append({
+                    'id': item.id,
+                    'nome': item.nome,
+                    'desconto': item.desconto,
+                    'preco': item.preco,
+                    'descricao': item.descricao,
+                    'data_cadastro': item.data_cadastro,
+                    'ativo': item.ativo,
+                    'miniatura': item.miniatura,
+                    'imagens': imagens_produtos,
+                    'cores': cores_produtos,
+                    'armazenamento': armazenamento_produtos,
+                    'categoria': item.categoria,
+                    'estado': item.estado
+                })
+
+            return {'status': 200, 'produtos': produtos}
+        except Exception as e:
+            print(f"Erro ao listar produtos: {e}")
+            return {'status': 500, 'message': 'Erro ao listar produtos'}
 
 # retorna todas as categorias cadastradas
 @produto_router.get("/categorias")
@@ -228,3 +278,111 @@ async def listar_categorias():
             print(f"Erro ao listar categorias: {e}")
             return {'status': 500, 'message': 'Erro ao listar categorias'}
         
+
+# pegar um produto de cada categoria para exibir na home, menos iphone
+@produto_router.get("/destaques")
+async def listar_destaque():
+    with engine.connect() as conn:
+        try:
+            result = conn.execute(produto.select()).fetchall()
+            produtos = []
+
+            # verificar se não é iphone e se ja nao tem um produto da categoria na lista
+            categorias = []
+            for item in result:
+                if item.categoria not in categorias and item.categoria != 'iphone':
+                    categorias.append(item.categoria)
+                    imagens_produto = conn.execute(produto_imagens.select().where(produto_imagens.c.produto_id == item.id)).fetchall()
+                    imagens_produtos = []
+                    for img in imagens_produto:
+                        img_data = conn.execute(imagens.select().where(imagens.c.id == img.imagens_id)).fetchone()
+                        imagens_produtos.append(img_data.imagem)
+                        if len(imagens_produtos) >= 4:
+                            break
+
+                    cores_produto = conn.execute(produto_cores.select().where(produto_cores.c.produto_id == item.id)).fetchall()
+                    cores_produtos = []
+                    for cor in cores_produto:
+                        cor_data = conn.execute(cores.select().where(cores.c.id == cor.cores_id)).fetchone()
+                        cores_produtos.append({'nome': cor_data.nome, 'hexadecimal': cor_data.hexadecimal})
+
+                    armazenamento_produto = conn.execute(produto_armazenamento.select().where(produto_armazenamento.c.produto_id == item.id)).fetchall()
+                    armazenamento_produtos = []
+                    for arm in armazenamento_produto:
+                        arm_data = conn.execute(armazenamento.select().where(armazenamento.c.id == arm.armazenamento_id)).fetchone()
+                        armazenamento_produtos.append(arm_data.quantidade)
+
+                    produtos.append({
+                        'id': item.id,
+                        'nome': item.nome,
+                        'desconto': item.desconto,
+                        'preco': item.preco,
+                        'descricao': item.descricao,
+                        'data_cadastro': item.data_cadastro,
+                        'ativo': item.ativo,
+                        'miniatura': item.miniatura,
+                        'imagens': imagens_produtos,
+                        'cores': cores_produtos,
+                        'armazenamento': armazenamento_produtos,
+                        'categoria': item.categoria
+                    })
+
+            return {'status': 200, 'produtos': produtos}
+        except Exception as e:
+            print(f"Erro ao listar destaques: {e}")
+            return {'status': 500, 'message': 'Erro ao listar destaques'}
+        
+
+
+# pegar um produto de cada categoria para exibir na home, menos iphone
+@produto_router.get("/destaques-exeto-produto/{id}")
+async def listar_destaque_exeto_produto(id: int):
+    with engine.connect() as conn:
+        try:
+            result = conn.execute(produto.select()).fetchall()
+            produtos = []
+
+            # verificar se não é iphone e se ja nao tem um produto da categoria na lista
+            categorias = []
+            for item in result:
+                if item.categoria not in categorias and item.categoria != 'iphone' and item.id != id:
+                    categorias.append(item.categoria)
+                    imagens_produto = conn.execute(produto_imagens.select().where(produto_imagens.c.produto_id == item.id)).fetchall()
+                    imagens_produtos = []
+                    for img in imagens_produto:
+                        img_data = conn.execute(imagens.select().where(imagens.c.id == img.imagens_id)).fetchone()
+                        imagens_produtos.append(img_data.imagem)
+                        if len(imagens_produtos) >= 4:
+                            break
+
+                    cores_produto = conn.execute(produto_cores.select().where(produto_cores.c.produto_id == item.id)).fetchall()
+                    cores_produtos = []
+                    for cor in cores_produto:
+                        cor_data = conn.execute(cores.select().where(cores.c.id == cor.cores_id)).fetchone()
+                        cores_produtos.append({'nome': cor_data.nome, 'hexadecimal': cor_data.hexadecimal})
+
+                    armazenamento_produto = conn.execute(produto_armazenamento.select().where(produto_armazenamento.c.produto_id == item.id)).fetchall()
+                    armazenamento_produtos = []
+                    for arm in armazenamento_produto:
+                        arm_data = conn.execute(armazenamento.select().where(armazenamento.c.id == arm.armazenamento_id)).fetchone()
+                        armazenamento_produtos.append(arm_data.quantidade)
+
+                    produtos.append({
+                        'id': item.id,
+                        'nome': item.nome,
+                        'desconto': item.desconto,
+                        'preco': item.preco,
+                        'descricao': item.descricao,
+                        'data_cadastro': item.data_cadastro,
+                        'ativo': item.ativo,
+                        'miniatura': item.miniatura,
+                        'imagens': imagens_produtos,
+                        'cores': cores_produtos,
+                        'armazenamento': armazenamento_produtos,
+                        'categoria': item.categoria
+                    })
+
+            return {'status': 200, 'produtos': produtos}
+        except Exception as e:
+            print(f"Erro ao listar destaques: {e}")
+            return {'status': 500, 'message': 'Erro ao listar destaques'}
