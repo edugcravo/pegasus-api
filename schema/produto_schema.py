@@ -16,3 +16,4 @@ class produto_schema(BaseModel):
   categoria: str
   miniatura: str
   estado: str
+  formaEnvio: str

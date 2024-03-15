@@ -148,7 +148,9 @@ async def listar_produto_id(id: int):
                     'imagens': imagens_produtos,
                     'cores': cores_produtos,
                     'armazenamento': armazenamento_produtos,
-                    'categoria': resultado.categoria
+                    'categoria': resultado.categoria,
+                    'estado': resultado.estado,
+                    'formaEnvio': resultado.formaEnvio
                 }
                 return {'status': 200, 'produto': produto_info}
             else:

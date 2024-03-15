@@ -11,7 +11,11 @@ from config.db import engine
 from model.imagens import imagens
 
 app = FastAPI()
-origins = ["*"]
+origins = [
+    "http://localhost",
+    "http://localhost:4200",
+    "https://ipegasus.com.br"
+]
 
 app.add_middleware(
     CORSMiddleware,
